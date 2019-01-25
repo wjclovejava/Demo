@@ -1,6 +1,5 @@
 package com.example.wjc.ssecurity1215.excel_import;
 
-import com.example.wjc.ssecurity1215.util.DozerUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -8,13 +7,11 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -28,68 +25,69 @@ public class ImportExcelUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ImportExcelUtil.class);
 
     //2003- 版本的excel
-    private final static String excel2003L =".xls";
+    private final static String excel2003L = ".xls";
     //2007+ 版本的excel
-    private final static String excel2007U =".xlsx";
-
+    private final static String excel2007U = ".xlsx";
 
 
     /**
      * 描述：获取IO流中的数据，组装成List<T>对象
-     *      获取第0个sheet中,从0行到最后一行的数据,默认第0行为title
+     * 获取第0个sheet中,从0行到最后一行的数据,默认第0行为title
+     *
      * @param work
      * @param beanClass 转换成beanClass
      * @return
      * @throws Exception
      */
-    public static <T> List<T> getDefaultDataListByExcel(Workbook work, Class<T> beanClass) throws Exception{
-        return getDataListByExcel(work,beanClass,0,0,Integer.MAX_VALUE);
+    public static <T> List<T> getDefaultDataListByExcel(Workbook work, Class<T> beanClass) throws Exception {
+        return getDataListByExcel(work, beanClass, 0, 0, Integer.MAX_VALUE);
     }
-
 
 
     /**
      * 描述：获取IO流中的数据，组装成List<T>对象
-     *      获取第sheetIndex个sheet中,从0行到最后一行
+     * 获取第sheetIndex个sheet中,从0行到最后一行
+     *
      * @param work
-     * @param beanClass 转换成beanClass
+     * @param beanClass  转换成beanClass
      * @param sheetIndex 要获取的sheet的index值
      * @return
      * @throws Exception
      */
-    public static <T> List<T> getFullDataListByExcel(Workbook work,Class<T> beanClass,int sheetIndex) throws Exception{
-        return getDataListByExcel(work,beanClass,sheetIndex,0,Integer.MAX_VALUE);
+    public static <T> List<T> getFullDataListByExcel(Workbook work, Class<T> beanClass, int sheetIndex) throws Exception {
+        return getDataListByExcel(work, beanClass, sheetIndex, 0, Integer.MAX_VALUE);
     }
 
     /**
      * 描述：获取IO流中的数据，组装成List<T>对象
+     *
      * @param work
-     * @param beanClass 转换成beanClass
+     * @param beanClass  转换成beanClass
      * @param sheetIndex 要获取的sheet的index值
      * @return
      * @throws Exception
      */
-    public static <T> List<T> getDataListByExcel(Workbook work,Class<T> beanClass,int sheetIndex,int beginRowNum,int endRownum) throws Exception{
+    public static <T> List<T> getDataListByExcel(Workbook work, Class<T> beanClass, int sheetIndex, int beginRowNum, int endRownum) throws Exception {
         //获取响应的sheet
-        Sheet sheet = getSheet(work,sheetIndex);
+        Sheet sheet = getSheet(work, sheetIndex);
         //获取sheet的表头
-        Row titleRow = getRow(sheet,beginRowNum);
+        Row titleRow = getRow(sheet, beginRowNum);
         //返回的list<T>结果
-        List<T> list = getPartDataListByExcel(titleRow,sheet,beanClass,beginRowNum,endRownum);
+        List<T> list = getPartDataListByExcel(titleRow, sheet, beanClass, beginRowNum, endRownum);
         return list;
     }
 
 
-    public static <T> List<T> getPartDataListByExcel(Row titleRow,Sheet sheet,Class<T> beanClass,int beginRowNum,int endRownum) throws Exception{
+    public static <T> List<T> getPartDataListByExcel(Row titleRow, Sheet sheet, Class<T> beanClass, int beginRowNum, int endRownum) throws Exception {
         //返回的list<T>结果
         List<T> list = new ArrayList<T>();
         //获取导入文件对应的bean的标题map
         Map<Integer, ExcelHeader> maps = ImportExcelHeaderUtil.getHeaderMap(titleRow, beanClass);
         //遍历当前sheet中的所有行
-        for (int j = beginRowNum+1; j <= endRownum; j++) {
+        for (int j = beginRowNum + 1; j <= endRownum; j++) {
             Row row = sheet.getRow(j);
             //如果回去行为空,则认为数据已经遍历完成,直接跳出循环
-            if(row==null)break;
+            if (row == null) break;
             //新建一个T类
             T bean = beanClass.newInstance();
             //遍历所有的列
@@ -103,16 +101,16 @@ public class ImportExcelUtil {
                 Object value = getCellValue(cell);
                 int cellType = cell.getCellType();
                 //BeanUtils 无法将字符串转成日期类型,赋值前先将日期类型的字符串转成日期---start
-                if(cellType==Cell.CELL_TYPE_NUMERIC){
+                if (cellType == Cell.CELL_TYPE_NUMERIC) {
                     //对时间数字格式的特殊处理
                     short format = cell.getCellStyle().getDataFormat();
-                        //对时间格式（2015.12.5、2015/12/5、2015-12-5等）的处理***
-                    if (format == 14 || format == 31 || format == 57 || format == 58 || format == 20){
+                    //对时间格式（2015.12.5、2015/12/5、2015-12-5等）的处理***
+                    if (format == 14 || format == 31 || format == 57 || format == 58 || format == 20 || format == 22) {
                         BeanUtils.copyProperty(bean, filed, new SimpleDateFormat("yyyy-MM-dd").parse(value.toString()));
-                    }else{
+                    } else {
                         BeanUtils.copyProperty(bean, filed, value);
                     }
-                }else {
+                } else {
                     BeanUtils.copyProperty(bean, filed, value);
                 }
                 //BeanUtils 无法将字符串转成日期类型,赋值前先将日期类型的字符串转成日期---end
@@ -123,16 +121,16 @@ public class ImportExcelUtil {
     }
 
 
-
     /**
      * 描述：根据sheetIndex,得到响应的sheet
+     *
      * @param work,fileName
      * @return Sheet
      * @throws Exception
      */
-    public static Sheet getSheet(Workbook work,int sheetIndex) throws Exception{
+    public static Sheet getSheet(Workbook work, int sheetIndex) throws Exception {
         Sheet sheet = null;
-        if(work.getNumberOfSheets() >= 0){
+        if (work.getNumberOfSheets() >= 0) {
             sheet = work.getSheetAt(sheetIndex);
         }
         return sheet;
@@ -140,31 +138,33 @@ public class ImportExcelUtil {
 
     /**
      * 描述：根据rowIndex,得到响应的row
+     *
      * @param sheet,rowIndex
      * @return Sheet
      * @throws Exception
      */
-    public static Row getRow(Sheet sheet,int rowIndex) throws Exception{
+    public static Row getRow(Sheet sheet, int rowIndex) throws Exception {
         return sheet.getRow(rowIndex);
     }
 
 
     /**
      * 描述：根据文件后缀，自适应上传文件的版本
+     *
      * @param inStr,fileName
      * @return
      * @throws Exception
      */
-    public static Workbook getWorkbook(InputStream inStr,String fileName) throws Exception{
+    public static Workbook getWorkbook(InputStream inStr, String fileName) throws Exception {
         Workbook wb = null;
         String fileType = fileName.substring(fileName.lastIndexOf("."));
-        if(excel2003L.equals(fileType)){
+        if (excel2003L.equals(fileType)) {
             //2003-
             wb = new HSSFWorkbook(inStr);
-        }else if(excel2007U.equals(fileType)){
+        } else if (excel2007U.equals(fileType)) {
             //2007+
             wb = new XSSFWorkbook(inStr);
-        }else{
+        } else {
             throw new Exception("解析的文件格式有误！");
         }
         return wb;
@@ -173,17 +173,18 @@ public class ImportExcelUtil {
 
     /**
      * 描述：对表格中数值进行格式化
+     *
      * @param cell
      * @return
      */
-    private static Object getCellValue(Cell cell){
+    private static Object getCellValue(Cell cell) {
         Object value = null;
         //格式化number String字符
         DecimalFormat df = new DecimalFormat("0");
         //日期格式化
         SimpleDateFormat sdf = new SimpleDateFormat("yyy-MM-dd");
         //格式化数字
-        DecimalFormat df2 = new DecimalFormat("0.00");
+        DecimalFormat df2 = new DecimalFormat("0.0000");
 
         switch (cell.getCellType()) {
             //字符串型
@@ -192,11 +193,11 @@ public class ImportExcelUtil {
                 break;
             //日期或数字
             case Cell.CELL_TYPE_NUMERIC:
-                if("General".equals(cell.getCellStyle().getDataFormatString())){
-                    value = df.format(cell.getNumericCellValue());
-                }else if("m/d/yy".equals(cell.getCellStyle().getDataFormatString())){
+                if ("General".equals(cell.getCellStyle().getDataFormatString())) {
+                    value = cell.getNumericCellValue();
+                } else if ("m/d/yy".equals(cell.getCellStyle().getDataFormatString()) || "m/d/yy h:mm".equals(cell.getCellStyle().getDataFormatString()) ) {
                     value = sdf.format(cell.getDateCellValue());
-                }else{
+                } else {
                     value = df2.format(cell.getNumericCellValue());
                 }
                 break;
@@ -217,6 +218,9 @@ public class ImportExcelUtil {
             default:
                 break;
         }
+        if ("".equals(value)) {
+            value = null;
+        }
         return value;
     }
 
@@ -225,21 +229,21 @@ public class ImportExcelUtil {
         String url = "D://student.xlsx";
         File file = new File(url);
         FileInputStream fileInputStream = new FileInputStream(file);
-        Workbook work=null;
+        Workbook work = null;
         try {
             //创建Excel工作薄
-            work = getWorkbook(fileInputStream,"student.xlsx");
-            if(null == work){
+            work = getWorkbook(fileInputStream, "student.xlsx");
+            if (null == work) {
                 throw new Exception("创建Excel工作薄为空！");
             }
-            List<Student> studentList = getDataListByExcel(work, Student.class,0,0,Integer.MAX_VALUE);
-            List<Teacter> teacherList = getDataListByExcel(work, Teacter.class,1,0,Integer.MAX_VALUE);
+            List<Student> studentList = getDataListByExcel(work, Student.class, 0, 0, Integer.MAX_VALUE);
+            List<Teacter> teacherList = getDataListByExcel(work, Teacter.class, 1, 0, Integer.MAX_VALUE);
             studentList.stream().forEach(student -> System.out.println(student.toString()));
             teacherList.stream().forEach(teacher -> System.out.println(teacher.toString()));
 
         } catch (Exception e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             try {
                 work.close();
             } catch (IOException e) {

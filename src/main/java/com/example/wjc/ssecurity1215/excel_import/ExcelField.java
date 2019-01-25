@@ -15,7 +15,6 @@ public @interface ExcelField {
      * 属性的标题名称
      */
     String title();
-
     /**
      * 在excel的顺
      */
@@ -23,5 +22,4 @@ public @interface ExcelField {
 
     Class claz();
 
-    int maxLength() default 50;
 }

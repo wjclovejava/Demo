@@ -37,13 +37,9 @@ public class ImportExcelHeaderUtil {
         List<ExcelHeader> headers = getHeaderList(clz);
         Map<Integer, ExcelHeader> maps = new HashMap<>();
         for (Cell c : titleRow) {
-            String title = c.getStringCellValue();
-            for (ExcelHeader eh : headers) {
-                if (eh.getTitle().equals(title.trim())) {
-                    maps.put(c.getColumnIndex(), eh);
-                    break;
-                }
-            }
+            int columnIndex = c.getColumnIndex();
+            ExcelHeader excelHeader = headers.get(columnIndex);
+            maps.put(columnIndex, excelHeader);
         }
         return maps;
     }
